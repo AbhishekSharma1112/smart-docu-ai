@@ -7,8 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Bot, Sparkles } from "lucide-react";
 
-interface Message extends Omit<ChatMessageProps, 'isLoading'> {
+interface Message extends Omit<ChatMessageProps, 'isLoading' | 'isStreaming'> {
   id: string;
+  isStreaming?: boolean;
 }
 
 export const SmartChat = () => {
@@ -35,8 +36,19 @@ export const SmartChat = () => {
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
+    // Create a streaming bot message
+    const botMessageId = (Date.now() + 1).toString();
+    const streamingMessage: Message = {
+      id: botMessageId,
+      message: "",
+      isUser: false,
+      isStreaming: true
+    };
+    
+    setMessages(prev => [...prev, streamingMessage]);
+    setIsLoading(false);
+
     try {
-      // Simulate API call to chat endpoint
       const response = await fetch('http://localhost:5001/chat', {
         method: 'POST',
         headers: {
@@ -49,33 +61,80 @@ export const SmartChat = () => {
         throw new Error('Failed to get response');
       }
 
-      const data = await response.json();
-      
-      // Add bot response
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        message: data.response || "I received your message, but I'm currently running in demo mode. Please make sure the backend is running on localhost:5001.",
-        isUser: false
-      };
-      
-      setMessages(prev => [...prev, botMessage]);
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          accumulatedText += chunk;
+          
+          // Update the streaming message
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === botMessageId 
+                ? { ...msg, message: accumulatedText }
+                : msg
+            )
+          );
+        }
+      }
+
+      // Mark streaming as complete
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === botMessageId 
+            ? { ...msg, isStreaming: false }
+            : msg
+        )
+      );
+
     } catch (error) {
-      // Add error message
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        message: "I'm currently running in demo mode. To enable full functionality, please start the backend server on localhost:5001 with the chat endpoint.",
-        isUser: false
-      };
+      // Handle streaming for demo mode
+      const demoResponse = "I'm currently running in demo mode. To enable full functionality, please start the backend server on localhost:5001 with the chat endpoint.";
       
-      setMessages(prev => [...prev, errorMessage]);
+      // Simulate streaming for demo
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === botMessageId 
+            ? { ...msg, message: "", isStreaming: true }
+            : msg
+        )
+      );
+
+      // Simulate typewriter effect
+      for (let i = 0; i <= demoResponse.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 30));
+        const partialText = demoResponse.slice(0, i);
+        
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === botMessageId 
+              ? { ...msg, message: partialText }
+              : msg
+          )
+        );
+      }
+
+      // Mark streaming as complete
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === botMessageId 
+            ? { ...msg, isStreaming: false }
+            : msg
+        )
+      );
       
       toast({
         title: "Connection Error",
         description: "Could not connect to the backend. Running in demo mode.",
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -93,10 +152,20 @@ export const SmartChat = () => {
     };
     
     setMessages(prev => [...prev, fileMessage]);
-    setIsLoading(true);
+
+    // Create a streaming bot message for file analysis
+    const botMessageId = (Date.now() + 1).toString();
+    const streamingMessage: Message = {
+      id: botMessageId,
+      message: "",
+      isUser: false,
+      isStreaming: true
+    };
+    
+    setMessages(prev => [...prev, streamingMessage]);
+    setIsUploading(false);
 
     try {
-      // Simulate API call to file endpoint
       const formData = new FormData();
       formData.append('file', file);
 
@@ -109,39 +178,85 @@ export const SmartChat = () => {
         throw new Error('Failed to upload file');
       }
 
-      const data = await response.json();
-      
-      // Add bot response with file analysis
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        message: data.summary || `I've received your ${file.type} file "${file.name}". In demo mode, I can see it's a ${(file.size / 1024 / 1024).toFixed(2)}MB file. Connect the backend to get full file analysis capabilities.`,
-        isUser: false
-      };
-      
-      setMessages(prev => [...prev, botMessage]);
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          accumulatedText += chunk;
+          
+          // Update the streaming message
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === botMessageId 
+                ? { ...msg, message: accumulatedText }
+                : msg
+            )
+          );
+        }
+      }
+
+      // Mark streaming as complete
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === botMessageId 
+            ? { ...msg, isStreaming: false }
+            : msg
+        )
+      );
       
       toast({
         title: "File uploaded successfully",
         description: `${file.name} has been processed.`
       });
+
     } catch (error) {
-      // Add error message
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        message: "I received your file, but I'm currently running in demo mode. Please connect the backend on localhost:5001 with the file endpoint for full analysis.",
-        isUser: false
-      };
+      // Handle streaming for demo mode
+      const demoResponse = `I've received your ${file.type} file "${file.name}". In demo mode, I can see it's a ${(file.size / 1024 / 1024).toFixed(2)}MB file. Connect the backend to get full file analysis capabilities including content extraction, summaries, and insights.`;
       
-      setMessages(prev => [...prev, errorMessage]);
+      // Simulate streaming for demo
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === botMessageId 
+            ? { ...msg, message: "", isStreaming: true }
+            : msg
+        )
+      );
+
+      // Simulate typewriter effect
+      for (let i = 0; i <= demoResponse.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 25));
+        const partialText = demoResponse.slice(0, i);
+        
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === botMessageId 
+              ? { ...msg, message: partialText }
+              : msg
+          )
+        );
+      }
+
+      // Mark streaming as complete
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === botMessageId 
+            ? { ...msg, isStreaming: false }
+            : msg
+        )
+      );
       
       toast({
         title: "Upload Error",
         description: "Could not process file. Running in demo mode.",
         variant: "destructive"
       });
-    } finally {
-      setIsUploading(false);
-      setIsLoading(false);
     }
   };
 
@@ -174,6 +289,7 @@ export const SmartChat = () => {
             key={message.id}
             message={message.message}
             isUser={message.isUser}
+            isStreaming={message.isStreaming}
             fileName={message.fileName}
             fileType={message.fileType}
           />

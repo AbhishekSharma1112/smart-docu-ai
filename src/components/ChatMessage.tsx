@@ -5,11 +5,12 @@ export interface ChatMessageProps {
   message: string;
   isUser: boolean;
   isLoading?: boolean;
+  isStreaming?: boolean;
   fileName?: string;
   fileType?: string;
 }
 
-export const ChatMessage = ({ message, isUser, isLoading, fileName, fileType }: ChatMessageProps) => {
+export const ChatMessage = ({ message, isUser, isLoading, isStreaming, fileName, fileType }: ChatMessageProps) => {
   return (
     <div
       className={cn(
@@ -56,7 +57,12 @@ export const ChatMessage = ({ message, isUser, isLoading, fileName, fileType }: 
                 <div className="w-2 h-2 bg-current rounded-full animate-pulse delay-200" />
               </div>
             ) : (
-              <p className="whitespace-pre-wrap">{message}</p>
+              <div className="relative">
+                <p className="whitespace-pre-wrap">{message}</p>
+                {isStreaming && (
+                  <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
+                )}
+              </div>
             )}
           </div>
         </div>
