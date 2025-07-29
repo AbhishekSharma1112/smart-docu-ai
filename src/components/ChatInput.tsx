@@ -3,22 +3,49 @@ import { Send, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
-  onFileUpload: () => void;
+  onFileSelect: (file: File) => void;
   isLoading: boolean;
   placeholder?: string;
 }
 
 export const ChatInput = ({ 
   onSendMessage, 
-  onFileUpload, 
+  onFileSelect, 
   isLoading, 
   placeholder = "Type your message..." 
 }: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const ACCEPTED_FILE_TYPES = ['.pdf', '.zip', '.7z', '.csv', '.xlsx', '.xls'];
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (!ACCEPTED_FILE_TYPES.includes(fileExtension)) {
+        toast({
+          title: "File not supported",
+          description: "Please upload a PDF, ZIP, 7Z, CSV, or Excel file.",
+          variant: "destructive"
+        });
+        return;
+      }
+      onFileSelect(file);
+    }
+    // Reset input value to allow selecting the same file again
+    e.target.value = '';
+  };
+
+  const handleFileUpload = () => {
+    fileInputRef.current?.click();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,12 +74,19 @@ export const ChatInput = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.zip,.7z,.csv,.xlsx,.xls"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
       <div className="relative flex items-end gap-2 p-4 bg-gradient-glass backdrop-blur-sm border border-border rounded-2xl shadow-card">
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          onClick={onFileUpload}
+          onClick={handleFileUpload}
           className="flex-shrink-0 h-10 w-10 p-0 hover:bg-muted/50 transition-colors"
           disabled={isLoading}
         >

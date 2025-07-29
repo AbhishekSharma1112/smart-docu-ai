@@ -25,7 +25,6 @@ export const SmartChat = () => {
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showFileUpload, setShowFileUpload] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
@@ -198,7 +197,6 @@ export const SmartChat = () => {
 
   const handleFileSelect = async (file: File) => {
     setIsUploading(true);
-    setShowFileUpload(false);
 
     // Add file upload message
     const fileMessage: Message = {
@@ -390,33 +388,11 @@ export const SmartChat = () => {
       <div className="p-6 border-t border-border bg-gradient-glass backdrop-blur-sm">
         <ChatInput
           onSendMessage={handleSendMessage}
-          onFileUpload={() => setShowFileUpload(true)}
+          onFileSelect={handleFileSelect}
           isLoading={isLoading}
           placeholder="Ask me anything or upload a file for analysis..."
         />
       </div>
-
-      {/* File Upload Dialog */}
-      <Dialog open={showFileUpload} onOpenChange={setShowFileUpload}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Upload File for Analysis</DialogTitle>
-          </DialogHeader>
-          <FileUpload 
-            onFileSelect={handleFileSelect}
-            isUploading={isUploading}
-          />
-          <div className="flex justify-end gap-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowFileUpload(false)}
-              disabled={isUploading}
-            >
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
