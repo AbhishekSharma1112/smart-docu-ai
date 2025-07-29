@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
-import { Bot, User, FileText } from "lucide-react";
+import { Bot, User, FileText, Download } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { Button } from "@/components/ui/button";
 
 export interface ChatMessageProps {
   message: string;
@@ -9,9 +10,21 @@ export interface ChatMessageProps {
   isStreaming?: boolean;
   fileName?: string;
   fileType?: string;
+  isFileAnalysis?: boolean;
 }
 
-export const ChatMessage = ({ message, isUser, isLoading, isStreaming, fileName, fileType }: ChatMessageProps) => {
+export const ChatMessage = ({ message, isUser, isLoading, isStreaming, fileName, fileType, isFileAnalysis }: ChatMessageProps) => {
+  const handleDownload = () => {
+    const blob = new Blob([message], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analysis-${fileName || 'document'}-${Date.now()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
   return (
     <div
       className={cn(
@@ -88,6 +101,21 @@ export const ChatMessage = ({ message, isUser, isLoading, isStreaming, fileName,
                 {isStreaming && (
                   <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
                 )}
+              </div>
+            )}
+            
+            {/* Download button for file analysis results */}
+            {!isUser && !isLoading && !isStreaming && isFileAnalysis && message.trim() && (
+              <div className="mt-3 pt-2 border-t border-border/50">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                  className="text-xs h-8 px-3"
+                >
+                  <Download className="w-3 h-3 mr-1" />
+                  Download Analysis
+                </Button>
               </div>
             )}
           </div>

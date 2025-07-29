@@ -10,6 +10,7 @@ import { Bot, Sparkles } from "lucide-react";
 interface Message extends Omit<ChatMessageProps, 'isLoading' | 'isStreaming'> {
   id: string;
   isStreaming?: boolean;
+  isFileAnalysis?: boolean;
 }
 
 export const SmartChat = () => {
@@ -159,7 +160,8 @@ export const SmartChat = () => {
       id: botMessageId,
       message: "",
       isUser: false,
-      isStreaming: true
+      isStreaming: true,
+      isFileAnalysis: true
     };
     
     setMessages(prev => [...prev, streamingMessage]);
@@ -292,6 +294,7 @@ export const SmartChat = () => {
             isStreaming={message.isStreaming}
             fileName={message.fileName}
             fileType={message.fileType}
+            isFileAnalysis={message.isFileAnalysis}
           />
         ))}
         
