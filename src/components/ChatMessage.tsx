@@ -95,10 +95,15 @@ export const ChatMessage = ({ message, isUser, isLoading, isStreaming, fileName,
           
           <div className="text-sm leading-relaxed break-words overflow-wrap-anywhere">
             {isLoading ? (
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-current rounded-full animate-pulse" />
-                <div className="w-2 h-2 bg-current rounded-full animate-pulse delay-100" />
-                <div className="w-2 h-2 bg-current rounded-full animate-pulse delay-200" />
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {isFileAnalysis ? 'Analyzing file' : 'Working'}
+                </span>
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-current rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-current rounded-full animate-pulse delay-100" />
+                  <div className="w-2 h-2 bg-current rounded-full animate-pulse delay-200" />
+                </div>
               </div>
             ) : (
               <div className="relative">
