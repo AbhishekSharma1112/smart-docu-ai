@@ -7,15 +7,15 @@
 @layer base {
   :root {
     /* Core background and text */
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
     /* Chat interface colors */
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
 
-    --popover: 240 5% 6%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
 
     /* Brand colors - Purple to blue gradient theme */
     --primary: 262 83% 58%;
@@ -23,34 +23,34 @@
     --primary-glow: 262 100% 75%;
 
     /* Secondary colors for user messages */
-    --secondary: 240 5% 12%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 210 40% 95%;
+    --secondary-foreground: 222.2 84% 4.9%;
 
     /* Muted colors for subtle elements */
-    --muted: 240 5% 8%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 210 40% 98%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
     /* Accent colors for highlights */
-    --accent: 262 50% 50%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 210 40% 98%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
     /* UI element colors */
-    --border: 240 6% 10%;
-    --input: 240 6% 10%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
     --ring: 262 83% 58%;
 
     /* Chat specific colors */
     --chat-user: 262 83% 58%;
-    --chat-bot: 240 5% 12%;
+    --chat-bot: 210 40% 98%;
     --chat-upload: 142 71% 45%;
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(213 93% 68%));
-    --gradient-background: linear-gradient(135deg, hsl(240 10% 3.9%) 0%, hsl(240 8% 6%) 50%, hsl(240 10% 3.9%) 100%);
-    --gradient-glass: linear-gradient(135deg, hsla(0 0% 100% / 0.1), hsla(0 0% 100% / 0.05));
+    --gradient-background: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 50%, hsl(0 0% 100%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsla(0 0% 0% / 0.05), hsla(0 0% 0% / 0.02));
 
     /* Shadows */
     --shadow-glow: 0 0 40px hsl(262 83% 58% / 0.3);

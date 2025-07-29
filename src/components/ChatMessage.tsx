@@ -1,7 +1,10 @@
 import { cn } from "@/lib/utils";
-import { Bot, User, FileText, Download } from "lucide-react";
+import { Bot, User, FileText, Download, FileDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import jsPDF from "jspdf";
+import { Document, Packer, Paragraph } from "docx";
 
 export interface ChatMessageProps {
   message: string;
@@ -14,16 +17,43 @@ export interface ChatMessageProps {
 }
 
 export const ChatMessage = ({ message, isUser, isLoading, isStreaming, fileName, fileType, isFileAnalysis }: ChatMessageProps) => {
-  const handleDownload = () => {
-    const blob = new Blob([message], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `analysis-${fileName || 'document'}-${Date.now()}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleDownload = (format: 'pdf' | 'doc' | 'md') => {
+    const baseFileName = `analysis-${fileName || 'document'}-${Date.now()}`;
+    
+    if (format === 'pdf') {
+      const pdf = new jsPDF();
+      const lines = pdf.splitTextToSize(message, 180);
+      pdf.text(lines, 15, 20);
+      pdf.save(`${baseFileName}.pdf`);
+    } else if (format === 'doc') {
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [new Paragraph(message)]
+        }]
+      });
+      
+      Packer.toBlob(doc).then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${baseFileName}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    } else {
+      const blob = new Blob([message], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${baseFileName}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   };
   return (
     <div
@@ -107,15 +137,32 @@ export const ChatMessage = ({ message, isUser, isLoading, isStreaming, fileName,
             {/* Download button for file analysis results */}
             {!isUser && !isLoading && !isStreaming && isFileAnalysis && message.trim() && (
               <div className="mt-3 pt-2 border-t border-border/50">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownload}
-                  className="text-xs h-8 px-3"
-                >
-                  <Download className="w-3 h-3 mr-1" />
-                  Download Analysis
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-8 px-3"
+                    >
+                      <Download className="w-3 h-3 mr-1" />
+                      Download Analysis
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleDownload('pdf')}>
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Download as PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDownload('doc')}>
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Download as DOC
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDownload('md')}>
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Download as Markdown
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             )}
           </div>

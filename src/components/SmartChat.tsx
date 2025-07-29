@@ -5,7 +5,10 @@ import { FileUpload } from "./FileUpload";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Bot, Sparkles } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Bot, Sparkles, Download, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import { Document, Packer, Paragraph } from "docx";
 
 interface Message extends Omit<ChatMessageProps, 'isLoading' | 'isStreaming'> {
   id: string;
@@ -25,6 +28,60 @@ export const SmartChat = () => {
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+
+  const handleDownloadAllAnalyses = (format: 'pdf' | 'doc' | 'md') => {
+    const analysisMessages = messages.filter(msg => !msg.isUser && msg.isFileAnalysis && msg.message.trim());
+    
+    if (analysisMessages.length === 0) {
+      toast({
+        title: "No analyses to download",
+        description: "Upload and analyze files first to download results.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const combinedContent = analysisMessages.map((msg, index) => 
+      `=== Analysis ${index + 1} ===\n\n${msg.message}\n\n`
+    ).join('');
+
+    const baseFileName = `all-analyses-${Date.now()}`;
+    
+    if (format === 'pdf') {
+      const pdf = new jsPDF();
+      const lines = pdf.splitTextToSize(combinedContent, 180);
+      pdf.text(lines, 15, 20);
+      pdf.save(`${baseFileName}.pdf`);
+    } else if (format === 'doc') {
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [new Paragraph(combinedContent)]
+        }]
+      });
+      
+      Packer.toBlob(doc).then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${baseFileName}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    } else {
+      const blob = new Blob([combinedContent], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${baseFileName}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
 
   const handleSendMessage = async (messageText: string) => {
     // Add user message
@@ -279,7 +336,29 @@ export const SmartChat = () => {
             </p>
           </div>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 px-3">
+                <Download className="w-4 h-4 mr-2" />
+                Download All
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleDownloadAllAnalyses('pdf')}>
+                <FileDown className="w-4 h-4 mr-2" />
+                Download as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadAllAnalyses('doc')}>
+                <FileDown className="w-4 h-4 mr-2" />
+                Download as DOC
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadAllAnalyses('md')}>
+                <FileDown className="w-4 h-4 mr-2" />
+                Download as Markdown
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Sparkles className="w-5 h-5 text-primary animate-pulse" />
         </div>
       </div>
