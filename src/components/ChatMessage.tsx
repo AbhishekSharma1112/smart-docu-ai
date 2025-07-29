@@ -17,19 +17,47 @@ export interface ChatMessageProps {
 }
 
 export const ChatMessage = ({ message, isUser, isLoading, isStreaming, fileName, fileType, isFileAnalysis }: ChatMessageProps) => {
+  const stripMarkdown = (text: string): string => {
+    return text
+      // Remove headers
+      .replace(/^#{1,6}\s+/gm, '')
+      // Remove bold and italic
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/__([^_]+)__/g, '$1')
+      .replace(/_([^_]+)_/g, '$1')
+      // Remove inline code
+      .replace(/`([^`]+)`/g, '$1')
+      // Remove code blocks
+      .replace(/```[\s\S]*?```/g, '')
+      // Remove blockquotes
+      .replace(/^>\s+/gm, '')
+      // Remove links but keep text
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      // Remove horizontal rules
+      .replace(/^[-*_]{3,}$/gm, '')
+      // Remove list markers
+      .replace(/^\s*[-*+]\s+/gm, '• ')
+      .replace(/^\s*\d+\.\s+/gm, '')
+      // Clean up extra whitespace
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  };
+
   const handleDownload = (format: 'pdf' | 'doc' | 'md') => {
     const baseFileName = `analysis-${fileName || 'document'}-${Date.now()}`;
+    const content = format === 'md' ? message : stripMarkdown(message);
     
     if (format === 'pdf') {
       const pdf = new jsPDF();
-      const lines = pdf.splitTextToSize(message, 180);
+      const lines = pdf.splitTextToSize(content, 180);
       pdf.text(lines, 15, 20);
       pdf.save(`${baseFileName}.pdf`);
     } else if (format === 'doc') {
       const doc = new Document({
         sections: [{
           properties: {},
-          children: [new Paragraph(message)]
+          children: [new Paragraph(content)]
         }]
       });
       
@@ -44,7 +72,7 @@ export const ChatMessage = ({ message, isUser, isLoading, isStreaming, fileName,
         URL.revokeObjectURL(url);
       });
     } else {
-      const blob = new Blob([message], { type: 'text/markdown' });
+      const blob = new Blob([content], { type: 'text/markdown' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
