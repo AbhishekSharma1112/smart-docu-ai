@@ -17,47 +17,160 @@ export interface ChatMessageProps {
 }
 
 export const ChatMessage = ({ message, isUser, isLoading, isStreaming, fileName, fileType, isFileAnalysis }: ChatMessageProps) => {
-  const stripMarkdown = (text: string): string => {
-    return text
-      // Remove headers
-      .replace(/^#{1,6}\s+/gm, '')
-      // Remove bold and italic
-      .replace(/\*\*([^*]+)\*\*/g, '$1')
-      .replace(/\*([^*]+)\*/g, '$1')
-      .replace(/__([^_]+)__/g, '$1')
-      .replace(/_([^_]+)_/g, '$1')
-      // Remove inline code
-      .replace(/`([^`]+)`/g, '$1')
-      // Remove code blocks
-      .replace(/```[\s\S]*?```/g, '')
-      // Remove blockquotes
-      .replace(/^>\s+/gm, '')
-      // Remove links but keep text
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      // Remove horizontal rules
-      .replace(/^[-*_]{3,}$/gm, '')
-      // Remove list markers
-      .replace(/^\s*[-*+]\s+/gm, '• ')
-      .replace(/^\s*\d+\.\s+/gm, '')
-      // Clean up extra whitespace
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+  const parseMarkdownForDoc = (text: string) => {
+    const lines = text.split('\n');
+    const children = [];
+    
+    for (const line of lines) {
+      if (line.trim() === '') {
+        continue;
+      }
+      
+      // Headers
+      if (line.match(/^#{1,6}\s+/)) {
+        const level = line.match(/^#+/)[0].length;
+        const text = line.replace(/^#+\s+/, '');
+        children.push(new Paragraph({
+          text: text,
+          heading: level === 1 ? 'Heading1' : level === 2 ? 'Heading2' : 'Heading3',
+          spacing: { after: 200 }
+        }));
+      }
+      // Bullet points
+      else if (line.match(/^\s*[-*+]\s+/)) {
+        const text = line.replace(/^\s*[-*+]\s+/, '');
+        children.push(new Paragraph({
+          text: `• ${text}`,
+          spacing: { after: 100 }
+        }));
+      }
+      // Numbered lists
+      else if (line.match(/^\s*\d+\.\s+/)) {
+        const text = line.replace(/^\s*\d+\.\s+/, '');
+        const number = line.match(/^\s*(\d+)\./)[1];
+        children.push(new Paragraph({
+          text: `${number}. ${text}`,
+          spacing: { after: 100 }
+        }));
+      }
+      // Blockquotes
+      else if (line.match(/^>\s+/)) {
+        const text = line.replace(/^>\s+/, '');
+        children.push(new Paragraph({
+          text: `"${text}"`,
+          spacing: { after: 100, before: 100 }
+        }));
+      }
+      // Regular paragraphs
+      else {
+        const cleanText = line
+          .replace(/\*\*([^*]+)\*\*/g, '$1')
+          .replace(/\*([^*]+)\*/g, '$1')
+          .replace(/`([^`]+)`/g, '$1')
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+        
+        if (cleanText.trim()) {
+          children.push(new Paragraph({
+            text: cleanText,
+            spacing: { after: 200 }
+          }));
+        }
+      }
+    }
+    
+    return children;
+  };
+
+  const generateFormattedPDF = (text: string, fileName: string) => {
+    const pdf = new jsPDF();
+    const lines = text.split('\n');
+    let yPosition = 20;
+    const pageHeight = pdf.internal.pageSize.height;
+    const margin = 15;
+    
+    for (const line of lines) {
+      if (yPosition > pageHeight - 30) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+      
+      if (line.trim() === '') {
+        yPosition += 5;
+        continue;
+      }
+      
+      // Headers
+      if (line.match(/^#{1,6}\s+/)) {
+        const level = line.match(/^#+/)[0].length;
+        const text = line.replace(/^#+\s+/, '');
+        const fontSize = level === 1 ? 18 : level === 2 ? 16 : 14;
+        
+        pdf.setFontSize(fontSize);
+        pdf.setFont(undefined, 'bold');
+        const wrappedText = pdf.splitTextToSize(text, 180);
+        pdf.text(wrappedText, margin, yPosition);
+        yPosition += wrappedText.length * (fontSize * 0.5) + 10;
+      }
+      // Bullet points
+      else if (line.match(/^\s*[-*+]\s+/)) {
+        const text = line.replace(/^\s*[-*+]\s+/, '');
+        pdf.setFontSize(12);
+        pdf.setFont(undefined, 'normal');
+        const wrappedText = pdf.splitTextToSize(`• ${text}`, 170);
+        pdf.text(wrappedText, margin + 10, yPosition);
+        yPosition += wrappedText.length * 6 + 3;
+      }
+      // Numbered lists
+      else if (line.match(/^\s*\d+\.\s+/)) {
+        const text = line.replace(/^\s*\d+\.\s+/, '');
+        const number = line.match(/^\s*(\d+)\./)[1];
+        pdf.setFontSize(12);
+        pdf.setFont(undefined, 'normal');
+        const wrappedText = pdf.splitTextToSize(`${number}. ${text}`, 170);
+        pdf.text(wrappedText, margin + 10, yPosition);
+        yPosition += wrappedText.length * 6 + 3;
+      }
+      // Blockquotes
+      else if (line.match(/^>\s+/)) {
+        const text = line.replace(/^>\s+/, '');
+        pdf.setFontSize(12);
+        pdf.setFont(undefined, 'italic');
+        const wrappedText = pdf.splitTextToSize(`"${text}"`, 170);
+        pdf.text(wrappedText, margin + 15, yPosition);
+        yPosition += wrappedText.length * 6 + 5;
+      }
+      // Regular text
+      else {
+        const cleanText = line
+          .replace(/\*\*([^*]+)\*\*/g, '$1')
+          .replace(/\*([^*]+)\*/g, '$1')
+          .replace(/`([^`]+)`/g, '$1')
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+        
+        if (cleanText.trim()) {
+          pdf.setFontSize(12);
+          pdf.setFont(undefined, 'normal');
+          const wrappedText = pdf.splitTextToSize(cleanText, 180);
+          pdf.text(wrappedText, margin, yPosition);
+          yPosition += wrappedText.length * 6 + 8;
+        }
+      }
+    }
+    
+    pdf.save(fileName);
   };
 
   const handleDownload = (format: 'pdf' | 'doc' | 'md') => {
     const baseFileName = `analysis-${fileName || 'document'}-${Date.now()}`;
-    const content = format === 'md' ? message : stripMarkdown(message);
     
     if (format === 'pdf') {
-      const pdf = new jsPDF();
-      const lines = pdf.splitTextToSize(content, 180);
-      pdf.text(lines, 15, 20);
-      pdf.save(`${baseFileName}.pdf`);
+      generateFormattedPDF(message, `${baseFileName}.pdf`);
     } else if (format === 'doc') {
+      const children = parseMarkdownForDoc(message);
       const doc = new Document({
         sections: [{
           properties: {},
-          children: [new Paragraph(content)]
+          children: children
         }]
       });
       
@@ -72,7 +185,7 @@ export const ChatMessage = ({ message, isUser, isLoading, isStreaming, fileName,
         URL.revokeObjectURL(url);
       });
     } else {
-      const blob = new Blob([content], { type: 'text/markdown' });
+      const blob = new Blob([message], { type: 'text/markdown' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
